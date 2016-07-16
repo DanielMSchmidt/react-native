@@ -43,6 +43,7 @@ RCTDeviceEventEmitter.addListener(DEVICE_BACK_EVENT, function() {
  *
  * ```js
  * BackAndroid.addEventListener('hardwareBackPress', function() {
+ *   // implement your own logic here, for example: 
  * 	 if (!this.onMainScreen()) {
  * 	   this.goBack();
  * 	   return true;
