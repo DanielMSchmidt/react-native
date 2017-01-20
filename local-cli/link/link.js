@@ -1,13 +1,25 @@
+/**
+ * Copyright (c) 2013-present, Facebook, Inc.
+ * All rights reserved.
+ *
+ * This source code is licensed under the BSD-style license found in the
+ * LICENSE file in the root directory of this source tree. An additional grant
+ * of patent rights can be found in the PATENTS file in the same directory.
+ */
+
 const log = require('npmlog');
 const path = require('path');
 const uniq = require('lodash').uniq;
 const flatten = require('lodash').flatten;
+const chalk = require('chalk');
 
 const isEmpty = require('lodash').isEmpty;
 const promiseWaterfall = require('./promiseWaterfall');
 const registerDependencyAndroid = require('./android/registerNativeModule');
+const registerDependencyWindows = require('./windows/registerNativeModule');
 const registerDependencyIOS = require('./ios/registerNativeModule');
 const isInstalledAndroid = require('./android/isInstalled');
+const isInstalledWindows = require('./windows/isInstalled');
 const isInstalledIOS = require('./ios/isInstalled');
 const copyAssetsAndroid = require('./android/copyAssets');
 const copyAssetsIOS = require('./ios/copyAssets');
@@ -30,7 +42,7 @@ const linkDependencyAndroid = (androidProject, dependency) => {
   const isInstalled = isInstalledAndroid(androidProject, dependency.name);
 
   if (isInstalled) {
-    log.info(`Android module ${dependency.name} is already linked`);
+    log.info(chalk.grey(`Android module ${dependency.name} is already linked`));
     return null;
   }
 
@@ -48,6 +60,33 @@ const linkDependencyAndroid = (androidProject, dependency) => {
   });
 };
 
+const linkDependencyWindows = (windowsProject, dependency) => {
+
+  if (!windowsProject || !dependency.config.windows) {
+    return null;
+  }
+
+  const isInstalled = isInstalledWindows(windowsProject, dependency.config.windows);
+
+  if (isInstalled) {
+    log.info(chalk.grey(`Windows module ${dependency.name} is already linked`));
+    return null;
+  }
+
+  return pollParams(dependency.config.params).then(params => {
+    log.info(`Linking ${dependency.name} windows dependency`);
+
+    registerDependencyWindows(
+      dependency.name,
+      dependency.config.windows,
+      params,
+      windowsProject
+    );
+
+    log.info(`Windows module ${dependency.name} has been successfully linked`);
+  });
+};
+
 const linkDependencyIOS = (iOSProject, dependency) => {
   if (!iOSProject || !dependency.config.ios) {
     return;
@@ -56,7 +95,7 @@ const linkDependencyIOS = (iOSProject, dependency) => {
   const isInstalled = isInstalledIOS(iOSProject, dependency.config.ios);
 
   if (isInstalled) {
-    log.info(`iOS module ${dependency.name} is already linked`);
+    log.info(chalk.grey(`iOS module ${dependency.name} is already linked`));
     return;
   }
 
@@ -82,11 +121,11 @@ const linkAssets = (project, assets) => {
     copyAssetsAndroid(assets, project.android.assetsPath);
   }
 
-  log.info(`Assets have been successfully linked to your project`);
+  log.info('Assets have been successfully linked to your project');
 };
 
 /**
- * Updates project and linkes all dependencies to it
+ * Updates project and links all dependencies to it
  *
  * If optional argument [packageName] is provided, it's the only one that's checked
  */
@@ -118,6 +157,7 @@ function link(args, config) {
     () => promisify(dependency.config.commands.prelink || commandStub),
     () => linkDependencyAndroid(project.android, dependency),
     () => linkDependencyIOS(project.ios, dependency),
+    () => linkDependencyWindows(project.windows, dependency),
     () => promisify(dependency.config.commands.postlink || commandStub),
   ]));
 
@@ -126,11 +166,11 @@ function link(args, config) {
   return promiseWaterfall(tasks).catch(err => {
     log.error(
       `It seems something went wrong while linking. Error: ${err.message} \n`
-      + `Please file an issue here: https://github.com/facebook/react-native/issues`
+      + 'Please file an issue here: https://github.com/facebook/react-native/issues'
     );
     throw err;
   });
-};
+}
 
 module.exports = {
   func: link,
