@@ -355,6 +355,19 @@ public class ReactTextInputManager extends BaseViewManager<ReactEditText, Layout
   public void setSelectTextOnFocus(ReactEditText view, boolean selectTextOnFocus) {
     view.setSelectAllOnFocus(selectTextOnFocus);
   }
+  
+  @ReactProp(name = "enablesReturnKeyAutomatically", defaultBoolean = false)
+  public void setEnablesReturnKeyAutomatically(ReactEditText view, boolean enablesReturnKeyAutomatically) {
+    // if (enablesReturnKeyAutomatically && view.getText() !== "") {
+    //     view.setReturnKeyType("none");
+    // } else {
+    //     // TODO: Get the original value of "done"
+    //     view.setReturnKeyType("done"); 
+    // }
+    
+    // TODO: adjust to bool and currently set text
+    view.setImeOptions(EditorInfo.IME_ACTION_NONE);
+  }
 
   @ReactProp(name = ViewProps.COLOR, customType = "Color")
   public void setColor(ReactEditText view, @Nullable Integer color) {
